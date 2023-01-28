@@ -4,7 +4,7 @@ Lab #1 - GS matching code
 CMPSC 463
 1/13/2022
 """
-
+from timeit import default_timer as timer
 '''
 GS Algorithm
 
@@ -21,6 +21,7 @@ while (some man is free and hasn't proposed to every woman) {
 
 Resources:
 https://www.youtube.com/watch?v=FhRf0j068ZA
+https://en.wikipedia.org/wiki/Gale%E2%80%93Shapley_algorithm
 '''
 
 '''I was thinking of just adding two more list components to the dict and 
@@ -35,8 +36,6 @@ employerTable = {
             "Microsoft" : ["Bob", "Tom", "Sarah", "Lisa", "Jane"],
                 }
 
-
-
 #creating employee rankings table
 employeeTable = {
             "Lisa"  : ["Google", "Amazon", "Apple", "Meta", "Microsoft"],
@@ -49,6 +48,7 @@ employeeTable = {
 currently_hired = []
 
 # track which employer has not yet made an offer and was accepted
+# also tracks
 make_offer = []
 
 # resets the active offer list and adds all the names of the employers
@@ -56,57 +56,95 @@ def making_offers():
     for employer in employerTable:
         make_offer.append(employer)
 
+# resets the make offer list to add all the names of the employees actively searching
+# used for setting employees as'proposer'
+def looking_for_offers():
+    for employee in employeeTable:
+        make_offer.append(employee)
 
 # start matchmaking algorithm
-def start_matching():
-    while(len(make_offer)> 0):
-        for employer in make_offer:
-            matchmaking(employer)
+def start_matching(proposer): # initlize matching based off whos asking to "propose"
+    while(len(make_offer)> 0): # while there are names in the offer list, seeking job/employee
+        for proposer in make_offer:
+            matchmaking(proposer) #sends over first name from making offers table
+
 
 # match making (GS) algorithm
-def matchmaking(employer):
-    print('Finding %s a job!'%(employer))
-    for employee in employerTable[employer]:
-        
+def matchmaking(proposer):
+    #initialize free variables used to control what gets accessed depending on whos proposing
+    who = proposer
+
+    # changing the details depening on who we assign as proposer
+    if who in employeeTable.keys():
+        rankings = employerTable
+        proposee = "employer"
+        proposers_ranking = employeeTable
+
+    else:
+        rankings = employeeTable
+        proposee = "employee"
+        proposers_ranking = employerTable
+
+    #print(who,"\nmatching table", rankings,"\n\nproposee =",proposee, "\n\nproposers table=", proposers_ranking)
+    print('\nWorking with %s!...'%(proposer))
+
+    for proposee in proposers_ranking[proposer]:
+        print('\nproposer: %s and proposee: %s!'%(proposer,proposee))
         # this will check to see if the employees name already appears in another match
-        temp_match = [match for match in currently_hired if employee in match]
+        temp_match = [match for match in currently_hired if proposee in match]
         
         #if the len is zero, then the employee doesnt have any outstanding matches/making_offers
         if (len(temp_match)==0): 
-            currently_hired.append([employer,employee]) # in which case you append them both to hired list
-            make_offer.remove(employer) # and remove the employer from making offers
-            print('%s is no longer hiring! Congrats to Their new employee %s'%(employer,employee))
+            currently_hired.append([proposer,proposee]) # in which case you append them both to hired list
+            make_offer.remove(proposer) # and remove the employer from making offers
+            print('%s is matched! Congrats to their new partnership with %s'%(proposer,proposee))
             # let the user know whos paired, and then exit when done
             break
 
         #however, if thats not the case, and they DO have an existing match; then the better offer wins
         elif (len(temp_match)>0):
-            print('%s is taken! Lets see if we can switch things around... :'%(employee))
+            print('%s is taken! Lets see if we can switch things around...'%(proposee))
 
             # acess temp employer match to see where that current employee is ranked, by return their index in the list
-            current_employer_rank = employeeTable[employee].index(temp_match[0][0])
+            current_proposer_rank = rankings[proposee].index(temp_match[0][0])
             # we repeat the same process to get the index of the new employer from the employees list
-            potentional_employer_rank = employeeTable[employee].index(employer)
+            potentional_proposer_rank = rankings[proposee].index(proposer)
 
             #now we compare and check to see if the current match is ranked higher (lower) than the potential match
-            if (current_employer_rank < potentional_employer_rank):
+            if (current_proposer_rank < potentional_proposer_rank):
                 print('sorry! %s"s offers too good to pass up!'%(temp_match[0][0]))
             else:
-                print('%s offer is better than %s! So hes making offers again!'%(employer,temp_match[0][0]))
+                print('%s offer is better! So %s is unmatched again!'%(proposer,temp_match[0][0]))
 
                # remove the employer from making offers
-                make_offer.remove(employer)
+                make_offer.remove(proposer)
                
                # add the old employer back to making offers
                 make_offer.append(temp_match[0][0])
                 
                 # reset current employer to new employer
-                temp_match[0][0] = employer
+                temp_match[0][0] = proposer
                 break 
             # and exit the loop
 
+
+
 if __name__ =="__main__":
+    proposer = 'employer'
     making_offers()
-    start_matching()
+    start = timer()
+    start_matching(proposer)
+    end = timer()
+    print("\nMatches Complete :")
+    print(currently_hired)
+    print("\nEmployers elapsed time: ", end - start)
+
+    currently_hired = [] #resetting list of matches to zero in order to add matches from different proposer
+    prop = "employee"
+    looking_for_offers()
+    start = timer()
+    start_matching(prop)
+    end = timer()
     print("Matches Complete :)\n")
     print(currently_hired)
+    print("Employees elapsed time: ", end - start)
